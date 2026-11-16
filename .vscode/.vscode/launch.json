@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run FluidX3D (Windows)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}\\bin\\FluidX3D.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build FluidX3D (Windows Release)",
+      "stopAtEntry": false,
+      "console": "integratedTerminal"
+    }
+  ]
+}

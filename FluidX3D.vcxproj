@@ -65,6 +65,7 @@
     <ClCompile Include="src\lodepng.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\setup.cpp" />
+    <ClCompile Include="src\setup_barbs.cpp" />
     <ClCompile Include="src\shapes.cpp" />
   </ItemGroup>
   <ItemGroup>

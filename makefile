@@ -22,7 +22,7 @@ Linux Android: LDLIBS_X11 =
 
 Linux-X11 Linux macOS Android: bin/FluidX3D
 
-bin/FluidX3D: temp/graphics.o temp/info.o temp/kernel.o temp/lbm.o temp/lodepng.o temp/main.o temp/setup.o temp/shapes.o make.sh
+bin/FluidX3D: temp/graphics.o temp/info.o temp/kernel.o temp/lbm.o temp/lodepng.o temp/main.o temp/setup.o temp/setup_barbs.o temp/shapes.o make.sh
 	@mkdir -p bin
 	$(CC) temp/*.o -o bin/FluidX3D $(CFLAGS) $(LDFLAGS_OPENCL) $(LDLIBS_OPENCL) $(LDFLAGS_X11) $(LDLIBS_X11)
 
@@ -53,6 +53,10 @@ temp/main.o: src/main.cpp src/defines.hpp src/graphics.hpp src/info.hpp src/lbm.
 temp/setup.o: src/setup.cpp src/defines.hpp src/graphics.hpp src/info.hpp src/lbm.hpp src/lodepng.hpp src/opencl.hpp src/setup.hpp src/shapes.hpp src/units.hpp src/utilities.hpp make.sh
 	@mkdir -p temp
 	$(CC) -c src/setup.cpp -o temp/setup.o $(CFLAGS) $(LDFLAGS_OPENCL)
+
+temp/setup_barbs.o: src/setup_barbs.cpp src/defines.hpp src/graphics.hpp src/info.hpp src/lbm.hpp src/lodepng.hpp src/opencl.hpp src/setup.hpp src/shapes.hpp src/units.hpp src/utilities.hpp make.sh
+	@mkdir -p temp
+	$(CC) -c src/setup_barbs.cpp -o temp/setup_barbs.o $(CFLAGS) $(LDFLAGS_OPENCL)
 
 temp/shapes.o: src/shapes.cpp src/shapes.hpp src/utilities.hpp make.sh
 	@mkdir -p temp

@@ -520,12 +520,20 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 	MONITORINFO mi = { sizeof(mi) };
 	if(!GetMonitorInfo(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &mi)) return 1;
 	DEVMODE lpDevMode = { 0 }; // get monitor fps
-	const uint width  = (uint)(mi.rcMonitor.right-mi.rcMonitor.left); // get screen size, initialize variables
-	const uint height = (uint)(mi.rcMonitor.bottom-mi.rcMonitor.top);
+	const uint monitor_width  = (uint)(mi.rcMonitor.right-mi.rcMonitor.left);
+	const uint monitor_height = (uint)(mi.rcMonitor.bottom-mi.rcMonitor.top);
+	const uint width  = min(GRAPHICS_WINDOW_WIDTH, monitor_width);
+	const uint height = min(GRAPHICS_WINDOW_HEIGHT, monitor_height);
+	RECT window_rect = { 0, 0, (LONG)width, (LONG)height };
+	AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
+	const int window_width = window_rect.right-window_rect.left;
+	const int window_height = window_rect.bottom-window_rect.top;
+	const int window_x = mi.rcMonitor.left+((int)monitor_width-window_width)/2;
+	const int window_y = mi.rcMonitor.top+((int)monitor_height-window_height)/2;
 	const uint fps_limit = (uint)EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &lpDevMode)!=0 ? (uint)lpDevMode.dmDisplayFrequency : 60u; // find out screen refresh rate
+	window = CreateWindow("WindowClass", WINDOW_NAME, WS_OVERLAPPEDWINDOW|WS_VISIBLE, window_x, window_y, window_width, window_height, 0, 0, hInstance, 0); // create a centered, resizable window
 	ShowCursor(false); // hide cursor
-	SetCursorPos(width/2, height/2);
-	window = CreateWindow("WindowClass", WINDOW_NAME, WS_POPUP|WS_VISIBLE, mi.rcMonitor.left, mi.rcMonitor.top, width, height, 0, 0, hInstance, 0); // create fullscreen window
+	SetCursorPos(window_x+width/2, window_y+height/2);
 	displayDC = GetDC(window);
 	memDC = CreateCompatibleDC(displayDC);
 	frameDC = CreateCompatibleBitmap(displayDC, width, height); // initialize back buffer
@@ -726,14 +734,20 @@ int main(int argc, char* argv[]) {
 		fps_limit = 60u; // fallback to 60fps default
 	}
 
+	const uint monitor_width = width;
+	const uint monitor_height = height;
+	width = min(GRAPHICS_WINDOW_WIDTH, monitor_width);
+	height = min(GRAPHICS_WINDOW_HEIGHT, monitor_height);
+	window_offset_x += ((int)monitor_width-(int)width)/2;
+	window_offset_y += ((int)monitor_height-(int)height)/2;
 	camera = Camera(width, height, fps_limit);
 
 	x11_window = XCreateWindow(x11_display, x11_root_window, window_offset_x, window_offset_y, width, height, 0, CopyFromParent, CopyFromParent, CopyFromParent, 0, 0);
 	XSizeHints x11_size_hints = { PPosition|PSize, window_offset_x, window_offset_y, (int)width, (int)height };
 	XSetNormalHints(x11_display, x11_window, &x11_size_hints); // place window on the primary monitor
-	struct Hints { long flags=2l, functions=0l, decorations=0b0000000l, input_mode=0l, status=0l; } x11_hints; // decorations=maximize|minimize|menu|title|resize|border|all
+	struct Hints { long flags=2l, functions=0l, decorations=1l, input_mode=0l, status=0l; } x11_hints; // retain window decorations for moving and resizing
 	Atom x11_property = XInternAtom(x11_display, "_MOTIF_WM_HINTS", 0);
-	XChangeProperty(x11_display, x11_window, x11_property, x11_property, 32, PropModeReplace, (unsigned char*)&x11_hints, 5); // remove window decorations
+	XChangeProperty(x11_display, x11_window, x11_property, x11_property, 32, PropModeReplace, (unsigned char*)&x11_hints, 5);
 	XStoreName(x11_display, x11_window, WINDOW_NAME);
 	XMapRaised(x11_display, x11_window);
 	x11_gc = XCreateGC(x11_display, x11_window, 0, 0);

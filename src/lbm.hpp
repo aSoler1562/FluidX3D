@@ -306,14 +306,21 @@ public:
 				if(name=="T"  ) unit_conversion_factor = (T)units.si_T  (1.0f);
 			}
 			const string filename = create_file_extension(path, ".vtk");
-			const float3 origin = spacing*float3(0.5f-0.5f*(float)Nx, 0.5f-0.5f*(float)Ny, 0.5f-0.5f*(float)Nz);
+			const bool is_flags = (name == "flags");
+			const float3 origin = is_flags ?
+				spacing*float3(-0.5f*(float)Nx, -0.5f*(float)Ny, -0.5f*(float)Nz) :
+				spacing*float3(0.5f-0.5f*(float)Nx, 0.5f-0.5f*(float)Ny, 0.5f-0.5f*(float)Nz);
+			const string vec_name = (name == "u") ? "Velocity" : name;
+			const string scalar_name = is_flags ? "data" : name;
 			const string header =
 				"# vtk DataFile Version 3.0\nFluidX3D "+filename.substr(filename.rfind('/')+1)+"\nBINARY\nDATASET STRUCTURED_POINTS\n"
-				"DIMENSIONS "+to_string(Nx)+" "+to_string(Ny)+" "+to_string(Nz)+"\n"
+				"DIMENSIONS "+to_string(is_flags ? Nx+1u : Nx)+" "+to_string(is_flags ? Ny+1u : Ny)+" "+to_string(is_flags ? Nz+1u : Nz)+"\n"
 				"ORIGIN "+to_string(origin.x)+" "+to_string(origin.y)+" "+to_string(origin.z)+"\n"
 				"SPACING "+to_string(spacing)+" "+to_string(spacing)+" "+to_string(spacing)+"\n"
-				"POINT_DATA "+to_string((ulong)Nx*(ulong)Ny*(ulong)Nz)+"\n"
-				"SCALARS data "+vtk_type()+" "+to_string(dimensions())+"\nLOOKUP_TABLE default\n"
+				+ (is_flags ? "CELL_DATA " : "POINT_DATA ") + to_string((ulong)Nx*(ulong)Ny*(ulong)Nz) + "\n"
+				+ (dimensions() == 3u ?
+					"VECTORS " + vec_name + " " + vtk_type() + "\n" :
+					"SCALARS " + scalar_name + " " + vtk_type() + " " + to_string(dimensions()) + "\nLOOKUP_TABLE default\n")
 			;
 			const uint chunk_size_MB = 4u*thread::hardware_concurrency(); // in MB; convert and write data in chunks, to reduce memory footprint and time for large memory allocation
 			const ulong chunk_elements = (1048576ull*(ulong)chunk_size_MB)/((ulong)dimensions()*sizeof(T));

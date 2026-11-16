@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build FluidX3D (Windows Release)",
+      "type": "shell",
+      "command": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat\" && MSBuild \"${workspaceFolder}\\FluidX3D.vcxproj\" /m /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143",
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/d", "/c"]
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}
