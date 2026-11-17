@@ -22,9 +22,33 @@
 void main_setup() {
 	// ###################################################### user parameters
 	// ######################################################
-	const float dx_um =
+	float dx_um =
 		2.0f; // lattice spacing [micrometers]; choose 20/k um (2, 1, 0.5, 0.4,
 			  // 0.25, ...) so Nx, Ny, Nz are integers
+	if (const char *env_dx = std::getenv("FLUIDX3D_DX_UM")) {
+		const float parsed = to_float(string(env_dx), 0.0f);
+		if (parsed > 0.0f)
+			dx_um = parsed;
+	}
+	if (!main_arguments.empty()) {
+		const float parsed = to_float(main_arguments[0], 0.0f);
+		if (parsed > 0.0f) {
+			dx_um = parsed;
+			main_arguments.erase(main_arguments.begin());
+		}
+	}
+	uint Dz = (dx_um <= 0.25f) ? 8u : 1u; // Dz=8 for dx=0.25um (15.2 GB fi buffer/domain < 20 GB
+	OpenCL limit)
+	if (const char *env_dz = std::getenv("FLUIDX3D_DZ")) {
+		const uint parsed_dz = to_uint(string(env_dz));
+		if (parsed_dz >= 1u)
+			Dz = parsed_dz;
+	}
+	if (Dz > 1u && main_arguments.empty()) {
+		for (uint d = 0u; d < Dz; d++) {
+			main_arguments.push_back(to_string(d < (Dz / 2u) ? 0u : 1u));
+		}
+	}
 	const float dP_Pa = 13.5f;	 // pressure drop across the top and bottom faces
 								 // (periodic length Lz) [Pa]
 	const float tau = 0.8f;		 // LBM relaxation time (nu_lb = (tau-0.5)/3); keep
@@ -91,7 +115,7 @@ void main_setup() {
 		to_string(Ny) + "  z 0 | " + to_string(Nz) + ")");
 
 	LBM lbm(
-		Nx, Ny, Nz, nu_lb, 0.0f, 0.0f, fz); // periodic in x, y, z by default
+		Nx, Ny, Nz, 1u, 1u, Dz, nu_lb, 0.0f, 0.0f, fz); // periodic in x, y, z by default
 
 	// ###################################################### define geometry
 	// ###################################################### STL is in mm and
@@ -151,6 +175,12 @@ void main_setup() {
 
 	// ###################################################### run simulation
 	// ######################################################
+	const string conv_dat = get_exe_path() + "export/convergence.dat";
+	create_folder(conv_dat);
+	std::ofstream conv_file(conv_dat, std::ios::out | std::ios::trunc);
+	conv_file << "# step t_us Q_mm3_s U_sup_m_s K_layer_um2 dQ_over_Q Q_above_over_below Q_mid_over_below\n"
+			  << std::flush;
+
 	lbm.run(0u, max_steps); // initialize
 	double Q_old = 0.0, Q_below = 0.0, Q_mid = 0.0, Q_above = 0.0,
 		   rel_change = 1.0;
@@ -163,8 +193,13 @@ void main_setup() {
 		rel_change =
 			Q_below != 0.0 ? fabs(Q_below - Q_old) / fabs(Q_below) : 1.0;
 		Q_old = Q_below;
-		const float U_si = units.si_u((float)(Q_below /
-			((double)Nx * (double)Ny))); // superficial velocity
+		const float Q_step_si = units.si_Q((float)Q_below);
+		const float U_si = Q_step_si / area_si; // superficial velocity [m/s]
+		const float K_step_um2 = (mu_si * U_si * layer_t_si / dP_Pa) * 1.0e12f;
+		const double t_us = (double)lbm.get_t() * (double)dt_si * 1.0e6;
+		conv_file << lbm.get_t() << " " << t_us << " " << (Q_step_si * 1.0e9f) << " "
+				  << U_si << " " << K_step_um2 << " " << rel_change << " "
+				  << (Q_above / Q_below) << " " << (Q_mid / Q_below) << std::endl;
 		print_info("t = " + to_string(lbm.get_t()) +
 			": U_sup = " + to_string(U_si, 6u) +
 			" m/s, dQ/Q = " + to_string((float)rel_change, 6u) +
@@ -172,6 +207,7 @@ void main_setup() {
 		if (lbm.get_t() >= min_steps && rel_change < conv_tol)
 			break;
 	}
+	conv_file.close();
 
 	// ###################################################### results
 	// ######################################################

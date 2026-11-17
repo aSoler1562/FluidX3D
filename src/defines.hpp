@@ -51,7 +51,7 @@
 // 2-way coupling also activate VOLUME_FORCE and FORCE_FIELD; only supported in
 // single-GPU)
 
-#define INTERACTIVE_GRAPHICS // enable interactive graphics; start/pause the
+// #define INTERACTIVE_GRAPHICS // enable interactive graphics; start/pause the
 // simulation by pressing P; either Windows or Linux X11 desktop must be
 // available; on Linux: change to "compile on Linux with X11" command in make.sh
 // #define INTERACTIVE_GRAPHICS_ASCII // enable interactive graphics in ASCII
