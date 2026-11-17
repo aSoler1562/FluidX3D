@@ -37,8 +37,7 @@ void main_setup() {
 			main_arguments.erase(main_arguments.begin());
 		}
 	}
-	uint Dz = (dx_um <= 0.25f) ? 8u : 1u; // Dz=8 for dx=0.25um (15.2 GB fi buffer/domain < 20 GB
-	OpenCL limit)
+	uint Dz = (dx_um <= 0.25f) ? 8u : 1u; // Dz=8 for dx=0.25um (15.2 GB fi buffer/domain < 20 GB OpenCL limit)
 	if (const char *env_dz = std::getenv("FLUIDX3D_DZ")) {
 		const uint parsed_dz = to_uint(string(env_dz));
 		if (parsed_dz >= 1u)
